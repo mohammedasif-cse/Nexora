@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opportunity Hub | Internships & Hackathons for 1st & 2nd Year Students</title>
+  
+  <!-- Modern Google Font: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========================================================
+       TOP NAVBAR / HEADER
+       ======================================================== -->
+  <header class="site-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <!-- Sparkle / Hub SVG Icon -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </div>
+        <div>
+          <h1 class="site-title">Opportunity Hub</h1>
+          <p class="site-tagline">Internships and hackathons for first and second years.</p>
+        </div>
+      </div>
+
+      <!-- Action Button to Submit an Opportunity -->
+      <a href="https://forms.gle/xDg2VaokH87qJ9sW9" 
+         target="_blank" 
+         rel="noopener noreferrer" 
+         class="btn btn-secondary submit-btn" 
+         id="header-submit-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="16"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+        <span>Submit an opportunity</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       MAIN CONTENT CONTAINER
+       ======================================================== -->
+  <main class="main-container">
+
+    <!-- SEARCH & FILTERS CONTROLS -->
+    <section class="controls-card" aria-label="Search and Filter Controls">
+      <!-- Search Input -->
+      <div class="search-box">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="search" 
+          id="search-input" 
+          placeholder="Search by role, company, or organizer (e.g. Python, Devfolio, GDG)..." 
+          autocomplete="off"
+          aria-label="Search opportunities"
+        >
+        <button type="button" id="search-clear-btn" class="search-clear" title="Clear search" aria-label="Clear search" hidden>&times;</button>
+      </div>
+
+      <!-- Filter Groups -->
+      <div class="filters-wrapper">
+        <!-- Type Filter -->
+        <div class="filter-group">
+          <span class="filter-label">Type:</span>
+          <div class="filter-chips" id="type-filter">
+            <button type="button" class="chip active" data-filter="type" data-value="all">All</button>
+            <button type="button" class="chip" data-filter="type" data-value="internship">Internship</button>
+            <button type="button" class="chip" data-filter="type" data-value="hackathon">Hackathon</button>
+          </div>
+        </div>
+
+        <!-- Eligibility Filter -->
+        <div class="filter-group">
+          <span class="filter-label">Eligibility:</span>
+          <div class="filter-chips" id="eligibility-filter">
+            <button type="button" class="chip active" data-filter="eligibility" data-value="all">All</button>
+            <button type="button" class="chip" data-filter="eligibility" data-value="1st year">1st year</button>
+            <button type="button" class="chip" data-filter="eligibility" data-value="2nd year">2nd year</button>
+          </div>
+        </div>
+
+        <!-- Mode Filter -->
+        <div class="filter-group">
+          <span class="filter-label">Mode:</span>
+          <div class="filter-chips" id="mode-filter">
+            <button type="button" class="chip active" data-filter="mode" data-value="all">All</button>
+            <button type="button" class="chip" data-filter="mode" data-value="online">Online</button>
+            <button type="button" class="chip" data-filter="mode" data-value="offline">Offline</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Count & Active Filters Summary Bar -->
+      <div class="results-meta">
+        <p id="results-count" class="results-count">Loading opportunities...</p>
+        <button type="button" id="reset-filters-btn" class="btn-text" hidden>Reset filters</button>
+      </div>
+    </section>
+
+    <!-- DYNAMIC STATUS NOTIFICATIONS -->
+    <!-- Loading State -->
+    <div id="loading-state" class="state-container" aria-live="polite">
+      <div class="spinner"></div>
+      <p class="state-title">Fetching live opportunities...</p>
+      <p class="state-subtitle">Connecting to verified internship & hackathon listings for college students.</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="state-container state-error" hidden aria-live="assertive">
+      <div class="state-icon error-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <p class="state-title">Unable to load opportunities</p>
+      <p class="state-subtitle" id="error-message">We couldn't retrieve the live sheet data right now. Please check your internet connection or try again.</p>
+      <button type="button" id="retry-btn" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Try Again
+      </button>
+    </div>
+
+    <!-- Empty State (No Matches) -->
+    <div id="empty-state" class="state-container state-empty" hidden>
+      <div class="state-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <line x1="8" y1="11" x2="14" y2="11"></line>
+        </svg>
+      </div>
+      <p class="state-title">No opportunities found</p>
+      <p class="state-subtitle">No internships or hackathons match your selected search and filters.</p>
+      <button type="button" id="clear-filters-btn" class="btn btn-secondary">Clear all filters</button>
+    </div>
+
+    <!-- ========================================================
+         OPPORTUNITIES GRID
+         ======================================================== -->
+    <section id="cards-container" class="cards-grid" aria-label="Opportunities list">
+      <!-- Dynamic Opportunity Cards will be injected here by script.js -->
+    </section>
+
+  </main>
+
+  <!-- ========================================================
+       FOOTER
+       ======================================================== -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-info">
+        <p class="footer-updated">
+          <span class="dot"></span>
+          <strong>Last updated:</strong> <span id="last-updated-date">Today</span>
+        </p>
+        <p class="footer-disclaimer">Always verify details on the official page before applying.</p>
+      </div>
+
+      <div class="footer-actions">
+        <a href="https://forms.gle/xDg2VaokH87qJ9sW9" target="_blank" rel="noopener noreferrer" class="footer-link">
+          Know an opportunity? Submit here &rarr;
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Main JavaScript File -->
+  <script src="script.js?v=4"></script>
+</body>
+</html>
