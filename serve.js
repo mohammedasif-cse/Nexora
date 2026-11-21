@@ -1,4 +1,4 @@
-// Nexora - Local Development Server with Live Google Sheet Proxy
+// Nexora - Local Development Server with Database API & Google Sheet Proxy
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -6,6 +6,7 @@ const path = require('path');
 
 const PORT = 3000;
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTYWrWzQxAAXrnYBABDVC9srR2y8MNByCqxpNyRRsP15p618oQixc10768rGvsWyY18DAcLKVD_dPcz/pub?output=csv';
+const DB_FILE = path.join(__dirname, 'db.json');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -18,6 +19,43 @@ const MIME_TYPES = {
   '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon'
 };
+
+// Ensure db.json exists
+function getDb() {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error reading db.json:', e);
+  }
+  return {
+    profile: {
+      name: 'Alex',
+      college: '',
+      dept: 'Computer Science',
+      yr: '1',
+      loc: 'Bangalore',
+      lv: '1',
+      bd: '0',
+      skills: 'Python, C++, HTML, CSS',
+      certs: '',
+      proj: '',
+      hack: '',
+      intern: '',
+      interest: 'Web Development, Open Source'
+    },
+    saved: {}
+  };
+}
+
+function saveDb(data) {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Error writing to db.json:', e);
+  }
+}
 
 // Helper to fetch live from Google Sheets following redirects
 function fetchLiveSheet(url, redirectCount = 0) {
@@ -44,10 +82,27 @@ function fetchLiveSheet(url, redirectCount = 0) {
   });
 }
 
+// Parse request JSON body helper
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   // CORS & No-Cache headers so the browser always sees fresh code
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
   if (req.method === 'OPTIONS') {
@@ -58,7 +113,52 @@ const server = http.createServer(async (req, res) => {
 
   let reqPath = req.url.split('?')[0];
 
-  // Optional live proxy endpoint: fetches live sheet without browser CORS restrictions
+  // API Endpoints for Profile & Saved database
+  if (reqPath === '/api/profile') {
+    const db = getDb();
+    if (req.method === 'POST') {
+      try {
+        const payload = await parseBody(req);
+        db.profile = Object.assign(db.profile || {}, payload);
+        saveDb(db);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, profile: db.profile }));
+        return;
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(db.profile || {}));
+      return;
+    }
+  }
+
+  if (reqPath === '/api/saved') {
+    const db = getDb();
+    if (req.method === 'POST') {
+      try {
+        const payload = await parseBody(req);
+        db.saved = payload;
+        saveDb(db);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, saved: db.saved }));
+        return;
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(db.saved || {}));
+      return;
+    }
+  }
+
+  // Live proxy endpoint: fetches live sheet without browser CORS restrictions
   if (reqPath === '/api/live-data') {
     try {
       const csvData = await fetchLiveSheet(CSV_URL);

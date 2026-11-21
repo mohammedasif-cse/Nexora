@@ -1,0 +1,22 @@
+{
+  "profile": {
+    "name": "Alex",
+    "college": "National Institute of Technology",
+    "dept": "Computer Science & Engineering",
+    "yr": "1",
+    "loc": "Bangalore",
+    "lv": "1",
+    "bd": "0",
+    "skills": "Python, C++, HTML, CSS, JavaScript",
+    "certs": "Python Basics (Coursera)",
+    "proj": "Personal Portfolio, Weather App",
+    "hack": "College Mini Hackathon 2026",
+    "intern": "",
+    "interest": "Web Development, AI/ML, Open Source"
+  },
+  "saved": {
+    "1": "Applied",
+    "2": "Saved",
+    "5": "Saved"
+  }
+}
