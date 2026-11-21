@@ -1,4 +1,4 @@
-// Opportunity Hub - Local Development Server with Live Google Sheet Proxy
+// Nexora - Local Development Server with Live Google Sheet Proxy
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -90,5 +90,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Opportunity Hub running at http://localhost:${PORT}`);
+  console.log(`Nexora running at http://localhost:${PORT}`);
 });

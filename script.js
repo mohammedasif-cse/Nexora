@@ -1,5 +1,5 @@
 /**
- * OPPORTUNITY HUB - JAVASCRIPT
+ * NEXORA - JAVASCRIPT
  * Fetches, parses, filters, and renders college internships and hackathons.
  * Built with plain modern JavaScript (ES6+), zero external dependencies.
  */
@@ -17,8 +17,8 @@ const FALLBACK_ENDPOINTS = [
   './data.csv'
 ];
 
-// Embedded snapshot of opportunities to guarantee 0ms instant display
-// and 100% reliability even if browser CORS or network restrictions occur
+// Embedded snapshot of opportunities to guarantee 100% reliability
+// if browser CORS or network restrictions occur
 const EMBEDDED_CSV = `Title,Type (Internship/Hackathon),Organizer,Eligibility (1st/2nd year),Mode,Deadline,Link
 Full Stack Developer Internship – Cognirex Solutions,Internship,Cognirex Solutions,Not specified,Remote,22 Nov 2026 (listed),https://unstop.com/internships/full-stack-developer-internship-cognirex-solutions-1810078
 IT / Computer Science Intern – Tophawks Marketing Solutions,Internship,Tophawks Marketing Solutions,Not specified,Remote,3 Dec 2026,https://unstop.com/internships/it-intern-computer-science-internship-tophawks-marketing-solutions-1819993
@@ -64,8 +64,8 @@ Internshala Student Partner Program 2026,Internship,Internshala,1st year / 2nd y
 
 // Application state
 const state = {
-  allOpportunities: [],       // Parsed and unexpired items
-  filteredOpportunities: [],  // Opportunities matching current search & filters
+  allOpportunities: [],       // All parsed unexpired opportunities
+  filteredOpportunities: [],  // Subset matching active search & filters
   filters: {
     search: '',
     type: 'all',              // 'all', 'internship', or 'hackathon'
@@ -114,12 +114,7 @@ const dom = {
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateFooterDate();
-
-  // 1. Immediately render bundled data for instant 0ms visual feedback
-  loadFromCSVString(EMBEDDED_CSV);
-
-  // 2. Concurrently attempt live sync to get any newer rows from Google Sheets
-  syncLiveData();
+  loadData();
 });
 
 // Set current formatted date in the footer
@@ -132,59 +127,112 @@ function updateFooterDate() {
 }
 
 // ============================================================================
-// 4. DATA PARSING & LIVE SYNC
+// 4. DATA FETCHING & SINGLE-STATE CONTROLLER
 // ============================================================================
 
 /**
- * Loads and renders opportunities directly from a CSV string.
+ * Loads opportunities, displaying ONLY one state at any time:
+ * - Loading: while fetching
+ * - Error: only if the fetch fails completely
+ * - Empty: only when filters match 0 results
+ * - Content (Cards Grid): only when there are results
  */
-function loadFromCSVString(csvText) {
-  try {
-    const rows = parseCSV(csvText);
-    if (rows && rows.length > 1) {
-      processSheetData(rows);
-      applyFilters();
-    }
-  } catch (err) {
-    console.error('Error parsing CSV string:', err);
+async function loadData() {
+  // Show loading while fetching
+  showState('loading');
+  if (dom.resultsCount) {
+    dom.resultsCount.textContent = 'Loading opportunities...';
   }
-}
 
-/**
- * Background live sync from Google Sheets or proxy endpoints.
- */
-async function syncLiveData() {
-  let liveCSV = null;
+  let csvText = null;
 
-  // Attempt direct Google Sheet fetch first
+  // 1. Try direct live fetch from published Google Sheet
   try {
     const response = await fetch(CSV_URL, { cache: 'no-store' });
     if (response.ok) {
-      liveCSV = await response.text();
+      csvText = await response.text();
     }
   } catch (err) {
-    // Expected when browser CORS or ad-blocker restricts cross-origin Google redirect
-    console.log('Direct Google Sheet fetch redirected, trying proxy/fallback endpoints...');
+    console.warn('Direct Google Sheet fetch failed (CORS or network restriction):', err);
   }
 
-  // Attempt proxy or local endpoint if direct fetch failed
-  if (!liveCSV || liveCSV.trim().length === 0) {
+  // 2. If direct fetch failed, try local endpoint / proxy
+  if (!csvText || csvText.trim().length === 0) {
     for (const endpoint of FALLBACK_ENDPOINTS) {
       try {
         const response = await fetch(endpoint, { cache: 'no-store' });
         if (response.ok) {
-          liveCSV = await response.text();
+          csvText = await response.text();
           break;
         }
       } catch (err) {
-        // Fallback endpoint unreachable
+        // Continue to next fallback
       }
     }
   }
 
-  // If live data was retrieved, update the state cleanly
-  if (liveCSV && liveCSV.trim().length > 0) {
-    loadFromCSVString(liveCSV);
+  // 3. Fallback to embedded snapshot if offline / CORS
+  if (!csvText || csvText.trim().length === 0) {
+    if (typeof EMBEDDED_CSV === 'string' && EMBEDDED_CSV.trim().length > 0) {
+      csvText = EMBEDDED_CSV;
+    }
+  }
+
+  // 4. If all sources failed, display error panel
+  if (!csvText || csvText.trim().length === 0) {
+    if (dom.errorMessage) {
+      dom.errorMessage.textContent = 'Unable to fetch live opportunities. Please verify your internet connection and click "Try Again".';
+    }
+    showState('error');
+    if (dom.resultsCount) {
+      dom.resultsCount.textContent = 'Failed to load opportunities';
+    }
+    return;
+  }
+
+  // 5. Parse CSV and display results
+  try {
+    const rows = parseCSV(csvText);
+    if (!rows || rows.length <= 1) {
+      throw new Error('CSV is empty or invalid.');
+    }
+
+    processSheetData(rows);
+    applyFilters();
+  } catch (err) {
+    console.error('Error processing opportunities:', err);
+    if (dom.errorMessage) {
+      dom.errorMessage.textContent = `Error processing opportunities: ${err.message}`;
+    }
+    showState('error');
+    if (dom.resultsCount) {
+      dom.resultsCount.textContent = 'Error parsing data';
+    }
+  }
+}
+
+/**
+ * Strict single-state visibility manager.
+ * Ensures that only ONE view is visible at any given time.
+ * view can be: 'loading', 'error', 'empty', or 'content'
+ */
+function showState(view) {
+  const panels = {
+    loading: dom.loadingState,
+    error: dom.errorState,
+    empty: dom.emptyState,
+    content: dom.cardsContainer
+  };
+
+  for (const [key, el] of Object.entries(panels)) {
+    if (!el) continue;
+    if (key === view) {
+      el.hidden = false;
+      el.removeAttribute('hidden');
+    } else {
+      el.hidden = true;
+      el.setAttribute('hidden', '');
+    }
   }
 }
 
@@ -417,8 +465,19 @@ function applyFilters() {
     return true;
   });
 
-  renderCards();
   updateResultsMeta();
+
+  // ONLY SHOW ONE STATE AT A TIME:
+  // If 0 results match, show Empty state. Otherwise, show Cards Grid (content).
+  if (state.filteredOpportunities.length === 0) {
+    showState('empty');
+    if (dom.cardsContainer) {
+      dom.cardsContainer.innerHTML = '';
+    }
+  } else {
+    showState('content');
+    renderCards();
+  }
 }
 
 /**
@@ -434,7 +493,9 @@ function updateResultsMeta() {
     state.filters.mode !== 'all';
 
   if (dom.resultsCount) {
-    if (count === total) {
+    if (count === 0) {
+      dom.resultsCount.textContent = 'No opportunities found';
+    } else if (count === total) {
       dom.resultsCount.textContent = `Showing all ${total} active opportunities`;
     } else {
       dom.resultsCount.textContent = `Showing ${count} of ${total} opportunities`;
@@ -458,13 +519,6 @@ function renderCards() {
   const items = state.filteredOpportunities;
 
   container.innerHTML = '';
-
-  if (items.length === 0) {
-    showState('empty');
-    return;
-  }
-
-  showState('content');
 
   const fragment = document.createDocumentFragment();
 
@@ -626,7 +680,7 @@ function setupEventListeners() {
   }
 
   if (dom.retryBtn) {
-    dom.retryBtn.addEventListener('click', syncLiveData);
+    dom.retryBtn.addEventListener('click', loadData);
   }
 }
 
@@ -659,13 +713,6 @@ function resetAllFilters() {
 // ============================================================================
 // 8. HELPER FUNCTIONS
 // ============================================================================
-function showState(view) {
-  if (dom.loadingState) dom.loadingState.hidden = view !== 'loading';
-  if (dom.errorState) dom.errorState.hidden = view !== 'error';
-  if (dom.emptyState) dom.emptyState.hidden = view !== 'empty';
-  if (dom.cardsContainer) dom.cardsContainer.hidden = view !== 'content';
-}
-
 function escapeHTML(str) {
   if (typeof str !== 'string') return '';
   return str

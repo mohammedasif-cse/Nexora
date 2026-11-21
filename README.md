@@ -1,4 +1,4 @@
-# Opportunity Hub 🎓🚀
+# Nexora 🎓🚀
 
 A simple, fast, mobile-friendly web portal listing curated internships and hackathons for 1st and 2nd year college students across India.
 
@@ -35,7 +35,7 @@ Built with **vanilla HTML, CSS, and JavaScript only** — no complex frameworks,
 
 ## 💻 How to Run Locally
 
-Because Opportunity Hub is built with pure static files, you can run it locally with zero build steps or package installations.
+Because Nexora is built with pure static files, you can run it locally with zero build steps or package installations.
 
 ### Option 1: Direct File Open (Easiest)
 Simply double-click `index.html` or drag and drop it into any modern web browser (Chrome, Edge, Firefox, Safari).
@@ -85,7 +85,7 @@ To connect your own Google Sheet or update the data source:
 
 ## 🚀 How to Deploy Free (Vercel & Netlify)
 
-Opportunity Hub is a static website and can be hosted for **free** with global CDN distribution and automatic SSL on Vercel or Netlify.
+Nexora is a static website and can be hosted for **free** with global CDN distribution and automatic SSL on Vercel or Netlify.
 
 ### Deploying to Netlify (Drag & Drop in 30 Seconds)
 
